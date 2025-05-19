@@ -5,13 +5,14 @@ import {
   addShips,
   getGame,
   isGameReady,
+  Ship,
 } from '../db/gamesDb.js';
 
 export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
   const { gameId, indexPlayer, ships } = message.data as {
     gameId: string;
     indexPlayer: string;
-    ships: any[];
+    ships: Ship[];
   };
 
   const success = addShips(gameId, indexPlayer, ships);

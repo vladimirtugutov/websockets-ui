@@ -24,7 +24,7 @@ export function handleCreateRoom(socket: ws.WebSocket, message: IncomingMessage)
     // создаём игру напрямую
     initGame(room.roomId, [
       [index, socket],
-      [botId, null as any], // временный заглушка
+      [botId, null as unknown as ws.WebSocket], // временная заглушка, позже game.players[botId] перезаписывается полностью
     ]);
 
     // генерируем боту корабли и доску
