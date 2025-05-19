@@ -6,6 +6,11 @@ import { IncomingMessage } from './types/messages.js';
 import { handleReg } from './handlers/reg.js';
 import { send } from './utils/send.js';
 import { addClient, removeClient } from './utils/broadcast.js';
+import {
+  handleCreateRoom,
+  handleAddUserToRoom,
+} from './handlers/room.js';
+import { handleAddShips } from './handlers/ships.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -29,6 +34,17 @@ wss.on('connection', (socket: ws.WebSocket) => {
       switch (message.type) {
         case 'reg':
           handleReg(socket, message);
+          break;
+        case 'create_room':
+          handleCreateRoom(socket, message);
+          break;
+
+        case 'add_user_to_room':
+          handleAddUserToRoom(socket, message);
+          break;
+
+        case 'add_ships':
+          handleAddShips(socket, message);
           break;
 
         default:
