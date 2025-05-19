@@ -11,6 +11,7 @@ import {
   handleAddUserToRoom,
 } from './handlers/room.js';
 import { handleAddShips } from './handlers/ships.js';
+import { handleAttack, handleRandomAttack } from './handlers/game.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -47,6 +48,14 @@ wss.on('connection', (socket: ws.WebSocket) => {
           handleAddShips(socket, message);
           break;
 
+          case 'attack':
+          handleAttack(socket, message);
+          break;
+
+        case 'randomAttack':
+          handleRandomAttack(socket, message);
+          break;
+          
         default:
           console.warn('Unknown message type:', message.type);
           send(socket, {
