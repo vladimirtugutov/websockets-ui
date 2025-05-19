@@ -5,17 +5,24 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "start": "node ./index.js",
-        "start:dev": "nodemon ./index.js",
+        "start": "node --loader ts-node/esm src/ws_server/server.ts",
+        "dev": "nodemon --watch src --exec \"node --loader ts-node/esm\" src/ws_server/server.ts",
+        "start:front": "node src/http_server/index.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Andrei Auchynnikau",
     "keywords": [],
     "license": "ISC",
     "devDependencies": {
-        "nodemon": "^2.0.16"
+        "@types/node": "^22.15.19",
+        "@types/ws": "^8.18.1",
+        "nodemon": "^2.0.16",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.8.3"
     },
     "dependencies": {
-        "ws": "^8.8.0"
+        "dotenv": "^16.5.0",
+        "ws": "^8.18.2"
     }
 }
