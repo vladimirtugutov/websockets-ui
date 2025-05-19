@@ -1,6 +1,7 @@
 import * as ws from 'ws';
 import { createServer } from 'http';
-import { httpServer } from '../http_server/index.js';
+// import { httpServer } from '../http_server/index.js';
+import { httpHandler } from '../http_server/index.js';
 
 import { IncomingMessage } from './types/messages.js';
 import { handleReg } from './handlers/reg.js';
@@ -18,7 +19,9 @@ dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
-const server = createServer(httpServer);
+// const server = createServer(httpServer);
+
+const server = createServer(httpHandler); // ✅ теперь всё корректно
 const wss = new ws.WebSocketServer({ server });
 
 console.log(`WebSocket + HTTP server started on http://localhost:${PORT}`);

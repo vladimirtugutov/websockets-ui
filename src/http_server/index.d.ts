@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { IncomingMessage, ServerResponse } from 'http';
 
-export declare const httpServer: (
+export declare function httpHandler(
   req: IncomingMessage,
   res: ServerResponse
-) => void;
+): void;
