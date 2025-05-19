@@ -7,27 +7,58 @@ export type Ship = {
   type: 'small' | 'medium' | 'large' | 'huge';
 };
 
+type CellStatus = 'empty' | 'ship' | 'hit' | 'miss' | 'killed';
+
+type BoardCell = {
+  x: number;
+  y: number;
+  status: CellStatus;
+};
+
+type PlayerState = {
+  ws: ws.WebSocket;
+  ships: Ship[];
+  board: BoardCell[][]; // 10x10
+  moves: Set<string>; // x,y координаты выстрелов
+};
+
 type GameState = {
   gameId: string;
-  players: Record<string, { ws: ws.WebSocket; ships?: Ship[] }>;
-  currentPlayerIndex: string | null;
+  players: Record<string, PlayerState>;
+  currentPlayerIndex: string;
+  isFinished: boolean;
 };
 
 const games: Record<string, GameState> = {};
 
-export function initGame(gameId: string, players: [string, ws.WebSocket]) {
+export function initGame(gameId: string, players: [string, ws.WebSocket][]) {
+  const gamePlayers: Record<string, PlayerState> = {};
+
+  for (const [playerId, socket] of players) {
+    gamePlayers[playerId] = {
+      ws: socket,
+      ships: [],
+      board: [],      // заполним позже
+      moves: new Set()
+    };
+  }
+
   games[gameId] = {
     gameId,
-    players: {
-      [players[0]]: { ws: players[1] },
-    },
-    currentPlayerIndex: null,
+    players: gamePlayers,
+    currentPlayerIndex: '',
+    isFinished: false
   };
 }
 
 export function addPlayerToGame(gameId: string, playerId: string, socket: ws.WebSocket) {
   if (!games[gameId]) return;
-  games[gameId].players[playerId] = { ws: socket };
+  games[gameId].players[playerId] = {
+    ws: socket,
+    ships: [],
+    board: [],
+    moves: new Set()
+  };
 }
 
 export function addShips(gameId: string, playerId: string, ships: Ship[]): boolean {
