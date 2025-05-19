@@ -1,6 +1,6 @@
-import WebSocket from 'ws';
-import { OutgoingMessage } from '../types/messages';
+import * as ws from 'ws';
+import { OutgoingMessage } from '../types/messages.js';
 
-export function send<T>(ws: WebSocket, message: OutgoingMessage<T>) {
-  ws.send(JSON.stringify(message));
+export function send<T>(socket: ws.WebSocket, message: OutgoingMessage<T>) {
+  socket.send(JSON.stringify(message));
 }
