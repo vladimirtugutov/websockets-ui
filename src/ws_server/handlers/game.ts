@@ -1,6 +1,6 @@
 import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
-import { getGame } from '../db/gamesDb.js';
+import { getGame, games } from '../db/gamesDb.js';
 import { send } from '../utils/send.js';
 import {
   applyAttack,
@@ -8,6 +8,8 @@ import {
   getSurroundingMisses,
   coordKey
 } from '../utils/board.js';
+import { increaseWins, getUserList } from '../db/usersDb.js';
+import { broadcast } from '../utils/broadcast.js';
 
 export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   const { gameId, x, y, indexPlayer } = message.data as {
@@ -84,21 +86,35 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     isShipKilled(enemy.board, ship)
   );
 
-  if (allShipsKilled) {
+    if (allShipsKilled) {
     game.isFinished = true;
 
+    // +1 победа игроку
+    increaseWins(indexPlayer);
+
+    // отправляем finish
     for (const id in game.players) {
-      send(game.players[id].ws, {
+        send(game.players[id].ws, {
         type: 'finish',
         data: {
-          winPlayer: indexPlayer,
+            winPlayer: indexPlayer,
         },
         id: 0,
-      });
+        });
     }
 
+    // обновляем таблицу победителей
+    broadcast({
+        type: 'update_winners',
+        data: getUserList(),
+        id: 0,
+    });
+
+    // можно (опционально) удалить игру
+    delete games[gameId];
+
     return;
-  }
+    }
 
   // смена хода
   game.currentPlayerIndex = enemyId;

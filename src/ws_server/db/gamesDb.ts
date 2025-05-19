@@ -29,7 +29,7 @@ type GameState = {
   isFinished: boolean;
 };
 
-const games: Record<string, GameState> = {};
+export const games: Record<string, GameState> = {};
 
 export function initGame(gameId: string, players: [string, ws.WebSocket][]) {
   const gamePlayers: Record<string, PlayerState> = {};
