@@ -12,7 +12,14 @@ export function removeClient(socket: ws.WebSocket) {
 }
 
 export function broadcast<T>(message: OutgoingMessage<T>) {
-  const msg = JSON.stringify(message);
+  const doubleSerialized = {
+    ...message,
+    data: JSON.stringify(message.data),
+  };
+
+  const msg = JSON.stringify(doubleSerialized);
+  console.log('📣 Broadcasting to clients:\n', msg);
+
   for (const client of clients) {
     if (client.readyState === ws.WebSocket.OPEN) {
       client.send(msg);

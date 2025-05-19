@@ -1,16 +1,28 @@
-import * as ws from 'ws';
-import { IncomingMessage, OutgoingMessage } from '../types/messages.js';
-import {
-  createUser,
-  validateUser,
-  getUserIndex,
-  getUserList,
-} from '../db/usersDb.js';
+import WebSocket from 'ws';
+import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { broadcast } from '../utils/broadcast.js';
+import { createUser, validateUser, getUserIndex, getUserList } from '../db/usersDb.js';
+import { getAvailableRooms } from '../db/roomsDb.js';
 
-export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
-  const { name, password } = message.data as { name: string; password: string };
+export function handleReg(socket: WebSocket, message: IncomingMessage) {
+  let data = message.data;
+
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      console.error('Invalid JSON string in message.data:', data);
+      send(socket, {
+        type: 'error',
+        data: 'Invalid JSON',
+        id: message.id,
+      });
+      return;
+    }
+  }
+
+  const { name, password } = data as { name: string; password: string };
 
   let error = false;
   let errorText = '';
@@ -26,7 +38,7 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
     }
   }
 
-  const regResponse: OutgoingMessage = {
+  const regResponse = {
     type: 'reg',
     data: {
       name,
@@ -39,9 +51,14 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
 
   send(socket, regResponse);
 
+  const rooms = getAvailableRooms().map((r) => ({
+    roomId: r.roomId,
+    roomUsers: r.roomUsers.map(({ name, index }) => ({ name, index })),
+  }));
+
   broadcast({
     type: 'update_room',
-    data: [], // позже заменим на реальные комнаты
+    data: rooms,
     id: 0,
   });
 
