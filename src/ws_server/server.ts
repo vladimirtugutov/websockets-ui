@@ -10,6 +10,7 @@ import { addClient, removeClient } from './utils/broadcast.js';
 import {
   handleCreateRoom,
   handleAddUserToRoom,
+  handleSinglePlay,
 } from './handlers/room.js';
 import { handleAddShips } from './handlers/ships.js';
 import { handleAttack, handleRandomAttack } from './handlers/game.js';
@@ -58,7 +59,11 @@ wss.on('connection', (socket: ws.WebSocket) => {
         case 'randomAttack':
           handleRandomAttack(socket, message);
           break;
-          
+
+        case 'single_play':
+          handleSinglePlay(socket, message);
+          break;
+
         default:
           console.warn('Unknown message type:', message.type);
           send(socket, {

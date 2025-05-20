@@ -1,9 +1,11 @@
 import * as ws from 'ws';
 import { handleRandomAttack } from '../handlers/game.js';
 
-export function createBotSocket(enemyId: string, gameId: string): ws.WebSocket {
+export function createBotSocket(botId: string, gameId: string): ws.WebSocket {
   const fake = {
-    send: () => {},
+    send: (msg: string) => {
+      console.log('Bot received message (fake send):', msg);
+    },
     close: () => {},
     on: () => {},
     readyState: ws.WebSocket.OPEN
@@ -13,7 +15,10 @@ export function createBotSocket(enemyId: string, gameId: string): ws.WebSocket {
     handleRandomAttack(fake, {
       type: 'randomAttack',
       id: 0,
-      data: { gameId, indexPlayer: `bot_${gameId}` }
+      data: {
+        gameId,
+        indexPlayer: botId
+      }
     });
   }, 1500);
 

@@ -1,9 +1,22 @@
+import * as ws from 'ws';
+
 type UserData = {
   password: string;
   wins: number;
 };
 
 const users: Record<string, UserData> = {};
+
+const socketToUserMap = new Map<ws.WebSocket, string>();
+
+export function bindSocketToUser(socket: ws.WebSocket, name: string) {
+  socketToUserMap.set(socket, name);
+}
+
+export function getUserIndexFromSocket(socket: ws.WebSocket): string | undefined {
+  const name = socketToUserMap.get(socket);
+  return name ? getUserIndex(name) : undefined;
+}
 
 export function createUser(name: string, password: string): boolean {
   if (users[name]) return false;

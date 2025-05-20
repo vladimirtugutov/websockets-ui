@@ -6,42 +6,69 @@ import {
   createRoom,
   addUserToRoom,
   getAvailableRooms,
-  removeRoom,
 } from '../db/roomsDb.js';
 import { initGame, getGame } from '../db/gamesDb.js';
 import { generateRandomShips } from '../utils/generateShips.js';
 import { initBoardFromShips } from '../utils/board.js';
 import { createBotSocket } from '../utils/botSocket.js';
+import {
+  getUserIndexFromSocket,
+  getUserList,
+} from '../db/usersDb.js';
+import { handleAddShips } from '../handlers/ships.js';
 
 export function handleCreateRoom(socket: ws.WebSocket, message: IncomingMessage) {
-  const { name, index } = message.data as { name: string; index: string };
-  const room = createRoom({ name, index, ws: socket });
+  const index = getUserIndexFromSocket(socket);
+  if (!index) {
+    send(socket, {
+      type: 'error',
+      data: 'User not registered',
+      id: message.id,
+    });
+    return;
+  }
 
-  // special case: room against bot
-  if (name === 'bot') {
+  const name = index;
+  const room = createRoom({ name, index, ws: socket });
+  console.log('Created room:', room);
+
+  // если игра против бота
+  const data = message.data as { name?: string };
+  if (data.name === 'bot') {
     const botId = 'bot_' + Date.now();
 
-    // создаём игру напрямую
     initGame(room.roomId, [
       [index, socket],
-      [botId, null as unknown as ws.WebSocket], // временная заглушка, позже game.players[botId] перезаписывается полностью
+      [botId, null as unknown as ws.WebSocket],
     ]);
 
-    // генерируем боту корабли и доску
     const botShips = generateRandomShips();
     const botBoard = initBoardFromShips(botShips);
 
     const game = getGame(room.roomId);
     if (game) {
       game.players[botId] = {
-        ws: createBotSocket(index, room.roomId),
+        ws: createBotSocket(botId, room.roomId),
         ships: botShips,
         board: botBoard,
         moves: new Set(),
       };
 
-      // рандомно определяем первого
       game.currentPlayerIndex = Math.random() < 0.5 ? index : botId;
+
+      const player = game.players[index];
+      player.ships = generateRandomShips();
+      player.board = initBoardFromShips(player.ships);
+
+      handleAddShips(player.ws, {
+        type: 'add_ships',
+        id: 0,
+        data: {
+          ships: player.ships,
+          indexPlayer: index,
+          gameId: room.roomId,
+        },
+      });
 
       for (const id in game.players) {
         const player = game.players[id];
@@ -67,25 +94,39 @@ export function handleCreateRoom(socket: ws.WebSocket, message: IncomingMessage)
     return;
   }
 
-  // обычный мультиплеер
-  send(socket, {
-    type: 'update_room',
-    data: getAvailableRooms().map((r) => ({
-      roomId: r.roomId,
-      roomUsers: r.roomUsers.map(({ name, index }) => ({ name, index })),
-    })),
-    id: 0,
-  });
-
   broadcastUpdateRoom();
 }
 
 export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessage) {
-  const { name, index, indexRoom } = message.data as {
-    name: string;
-    index: string;
-    indexRoom: string;
-  };
+  const index = getUserIndexFromSocket(socket);
+  if (!index) {
+    send(socket, {
+      type: 'error',
+      data: 'User not registered',
+      id: message.id,
+    });
+    return;
+  }
+
+  const name = index;
+
+  let data = message.data;
+
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      console.error('Invalid JSON in addUserToRoom');
+      send(socket, {
+        type: 'error',
+        data: 'Invalid JSON',
+        id: message.id,
+      });
+      return;
+    }
+  }
+
+  const { indexRoom } = data as { indexRoom: string };
 
   const room = addUserToRoom(indexRoom, { name, index, ws: socket });
   if (!room) {
@@ -119,5 +160,24 @@ export function broadcastUpdateRoom() {
       roomUsers: r.roomUsers.map(({ name, index }) => ({ name, index })),
     })),
     id: 0,
+  });
+}
+
+export function handleSinglePlay(socket: ws.WebSocket, message: IncomingMessage) {
+  const index = getUserIndexFromSocket(socket);
+  if (!index) {
+    send(socket, {
+      type: 'error',
+      data: 'User not registered',
+      id: message.id,
+    });
+    return;
+  }
+
+  handleCreateRoom(socket, {
+    ...message,
+    data: {
+      name: 'bot',
+    },
   });
 }

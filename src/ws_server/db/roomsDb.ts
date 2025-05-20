@@ -21,11 +21,16 @@ export function createRoom(user: RoomUser): Room {
     roomUsers: [user],
   };
   rooms.push(room);
+  console.log('Created room:', room);
+
   return room;
 }
 
 export function addUserToRoom(roomId: string, user: RoomUser): Room | null {
-  const room = rooms.find((r) => r.roomId === roomId);
+  console.log('roomId:', roomId);
+  console.log('rooms:', rooms.map(r => r.roomId));
+
+  const room = rooms.find((r) => r.roomId === String(roomId));
   if (!room || room.roomUsers.length >= 2) return null;
 
   room.roomUsers.push(user);

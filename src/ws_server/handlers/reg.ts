@@ -1,11 +1,12 @@
-import WebSocket from 'ws';
+import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { broadcast } from '../utils/broadcast.js';
 import { createUser, validateUser, getUserIndex, getUserList } from '../db/usersDb.js';
 import { getAvailableRooms } from '../db/roomsDb.js';
+import { bindSocketToUser } from '../db/usersDb.js';
 
-export function handleReg(socket: WebSocket, message: IncomingMessage) {
+export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
   let data = message.data;
 
   if (typeof data === 'string') {
@@ -50,6 +51,7 @@ export function handleReg(socket: WebSocket, message: IncomingMessage) {
   };
 
   send(socket, regResponse);
+  bindSocketToUser(socket, name);
 
   const rooms = getAvailableRooms().map((r) => ({
     roomId: r.roomId,

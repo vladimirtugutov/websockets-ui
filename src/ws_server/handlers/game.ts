@@ -142,15 +142,26 @@ export function handleRandomAttack(socket: ws.WebSocket, message: IncomingMessag
   const enemyId = Object.keys(game.players).find((id) => id !== indexPlayer);
   if (!enemyId) return;
 
+  const enemy = game.players[enemyId];
+  if (!enemy?.board) return;
+
   const tried = player.moves;
 
   let x = 0, y = 0;
+  const maxX = enemy.board[0]?.length || 10;
+  const maxY = enemy.board.length || 10;
+
+  let attempts = 0;
   do {
-    x = Math.floor(Math.random() * 10);
-    y = Math.floor(Math.random() * 10);
+    x = Math.floor(Math.random() * maxX);
+    y = Math.floor(Math.random() * maxY);
+    attempts++;
+    if (attempts > 100) {
+      console.warn('Bot failed to find valid attack position');
+      return;
+    }
   } while (tried.has(coordKey(x, y)));
 
-  // перезапустить тот же хендлер, что и ручной выстрел
   handleAttack(socket, {
     type: 'attack',
     data: { gameId, x, y, indexPlayer },
