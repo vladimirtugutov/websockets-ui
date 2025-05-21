@@ -6,40 +6,87 @@ import {
   applyAttack,
   isShipKilled,
   getSurroundingMisses,
-  coordKey
+  coordKey,
 } from '../utils/board.js';
 import { increaseWins, getUserList } from '../db/usersDb.js';
 import { broadcast } from '../utils/broadcast.js';
 
+type AttackData = {
+  x: number;
+  y: number;
+  gameId: string;
+  indexPlayer: string;
+};
+
 export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
-  const { gameId, x, y, indexPlayer } = message.data as {
-    gameId: string;
-    x: number;
-    y: number;
-    indexPlayer: string;
-  };
+  let raw = message.data;
+  let data: AttackData;
+
+  // 🔍 Попробуем распарсить JSON-строку
+  try {
+    if (typeof raw === 'string') {
+      data = JSON.parse(raw) as AttackData;
+    } else {
+      data = raw as AttackData;
+    }
+  } catch (err) {
+    console.error('[handleAttack] ❌ Failed to parse message.data:', raw);
+    send(socket, {
+      type: 'error',
+      data: 'Invalid JSON in attack',
+      id: message.id,
+    });
+    return;
+  }
+
+  // 🧱 Валидация типов
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    typeof data.x !== 'number' ||
+    typeof data.y !== 'number' ||
+    typeof data.gameId !== 'string' ||
+    typeof data.indexPlayer !== 'string'
+  ) {
+    console.error('[handleAttack] ❌ Invalid message format:', message);
+    send(socket, {
+      type: 'error',
+      data: 'Invalid message format',
+      id: message.id,
+    });
+    return;
+  }
+
+  const { gameId, x, y, indexPlayer } = data;
+
+  console.log('[handleAttack] ✅ Received attack:', { gameId, x, y, indexPlayer });
 
   const game = getGame(gameId);
-  if (!game || game.isFinished) return;
+  if (!game || game.isFinished) {
+    console.warn('[handleAttack] ⚠️ Game not found or already finished:', gameId);
+    return;
+  }
 
-  const current = game.currentPlayerIndex;
-  if (indexPlayer !== current) return;
+  if (indexPlayer !== game.currentPlayerIndex) {
+    console.warn('[handleAttack] ⛔ Not this player\'s turn:', indexPlayer);
+    return;
+  }
 
   const enemyId = Object.keys(game.players).find((id) => id !== indexPlayer);
   if (!enemyId) return;
 
-  const enemy = game.players[enemyId];
   const player = game.players[indexPlayer];
+  const enemy = game.players[enemyId];
 
   const key = coordKey(x, y);
-  if (player.moves.has(key)) return; // уже стрелял
-  player.moves.add(key);
+  if (player.moves.has(key)) return;
 
+  player.moves.add(key);
   const result = applyAttack(enemy.board, x, y);
 
-  // отправляем обоим игрокам результат выстрела
-  for (const user of [enemy, player]) {
-    send(user.ws, {
+  // 🎯 отправим результат обеим сторонам
+  for (const p of [player, enemy]) {
+    send(p.ws, {
       type: 'attack',
       data: {
         position: { x, y },
@@ -50,20 +97,19 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     });
   }
 
-  // проверка: убит корабль?
+  // 💀 проверка на убийство
   if (result === 'hit') {
     const killedShip = enemy.ships.find((ship) =>
       isShipKilled(enemy.board, ship)
     );
+
     if (killedShip) {
-      // обновляем клетки вокруг как miss
       const cells = getSurroundingMisses(killedShip);
       for (const [sx, sy] of cells) {
-        const cell = enemy.board[sy][sx];
-        if (cell.status === 'empty') {
-          cell.status = 'miss';
-          for (const user of [enemy, player]) {
-            send(user.ws, {
+        if (enemy.board[sy][sx].status === 'empty') {
+          enemy.board[sy][sx].status = 'miss';
+          for (const p of [player, enemy]) {
+            send(p.ws, {
               type: 'attack',
               data: {
                 position: { x: sx, y: sy },
@@ -75,48 +121,38 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
           }
         }
       }
-
-      // повторный ход
-      return;
+      return; // 🎯 игрок ходит снова
     }
   }
 
-  // проверка: победа
   const allShipsKilled = enemy.ships.every((ship) =>
     isShipKilled(enemy.board, ship)
   );
 
-    if (allShipsKilled) {
+  if (allShipsKilled) {
     game.isFinished = true;
-
-    // +1 победа игроку
     increaseWins(indexPlayer);
 
-    // отправляем finish
     for (const id in game.players) {
-        send(game.players[id].ws, {
+      send(game.players[id].ws, {
         type: 'finish',
         data: {
-            winPlayer: indexPlayer,
+          winPlayer: indexPlayer,
         },
         id: 0,
-        });
+      });
     }
 
-    // обновляем таблицу победителей
     broadcast({
-        type: 'update_winners',
-        data: getUserList(),
-        id: 0,
+      type: 'update_winners',
+      data: getUserList(),
+      id: 0,
     });
 
-    // можно (опционально) удалить игру
     delete games[gameId];
-
     return;
-    }
+  }
 
-  // смена хода
   game.currentPlayerIndex = enemyId;
   for (const id in game.players) {
     send(game.players[id].ws, {

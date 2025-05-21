@@ -7,7 +7,7 @@ import {
   addUserToRoom,
   getAvailableRooms,
 } from '../db/roomsDb.js';
-import { initGame, getGame } from '../db/gamesDb.js';
+import { initGame, getGame, socketToGamePlayer } from '../db/gamesDb.js';
 import { generateRandomShips } from '../utils/generateShips.js';
 import { initBoardFromShips } from '../utils/board.js';
 import { createBotSocket } from '../utils/botSocket.js';
@@ -32,7 +32,6 @@ export function handleCreateRoom(socket: ws.WebSocket, message: IncomingMessage)
   const room = createRoom({ name, index, ws: socket });
   console.log('Created room:', room);
 
-  // если игра против бота
   const data = message.data as { name?: string };
   if (data.name === 'bot') {
     const botId = 'bot_' + Date.now();
@@ -109,7 +108,6 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
   }
 
   const name = index;
-
   let data = message.data;
 
   if (typeof data === 'string') {
@@ -127,8 +125,8 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
   }
 
   const { indexRoom } = data as { indexRoom: string };
-
   const room = addUserToRoom(indexRoom, { name, index, ws: socket });
+
   if (!room) {
     send(socket, {
       type: 'error',
@@ -136,6 +134,28 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
       id: message.id,
     });
     return;
+  }
+
+  if (room.roomUsers.length === 2) {
+    console.log('[handleAddUserToRoom] Starting initGame');
+    const gameId = room.roomId;
+
+    initGame(gameId, room.roomUsers.map((u) => [u.index, u.ws]));
+
+    const playerIds = room.roomUsers.map((u) => u.index);
+    const currentPlayer = playerIds[Math.floor(Math.random() * playerIds.length)];
+    const game = getGame(gameId);
+    if (game) {
+      game.currentPlayerIndex = currentPlayer;
+      console.log(`[handleAddUserToRoom] Selected first player: ${currentPlayer}`);
+    }
+
+    for (const u of room.roomUsers) {
+      socketToGamePlayer.set(u.ws, {
+        gameId,
+        playerId: u.index,
+      });
+    }
   }
 
   broadcastUpdateRoom();
