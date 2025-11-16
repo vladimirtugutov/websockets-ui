@@ -11,23 +11,47 @@ export function generateRandomShips(): Ship[] {
   ];
 
   const taken = new Set<string>();
+  const reserved = new Set<string>();
 
   for (const [length, count] of sizes) {
     for (let c = 0; c < count; c++) {
       let placed = false;
+      let maxAttempts = 1000;
 
-      while (!placed) {
+      while (!placed && maxAttempts-- > 0) {
         const direction = Math.random() < 0.5;
-        const x = Math.floor(Math.random() * (direction ? 10 - length : 10));
-        const y = Math.floor(Math.random() * (direction ? 10 : 10 - length));
 
-        const coords = Array.from(
-          { length },
-          (_, i) => `${direction ? x + i : x},${direction ? y : y + i}`
-        );
+        const x = Math.floor(Math.random() * (direction ? 10 : 10 - length));
+        const y = Math.floor(Math.random() * (direction ? 10 - length : 10));
 
-        if (coords.every((c) => !taken.has(c))) {
-          coords.forEach((c) => taken.add(c));
+        const coords: [number, number][] = [];
+        const allCells: [number, number][] = [];
+
+        for (let i = 0; i < length; i++) {
+          const cx = direction ? x : x + i;
+          const cy = direction ? y + i : y;
+          coords.push([cx, cy]);
+        }
+
+        for (const [cx, cy] of coords) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = cx + dx;
+              const ny = cy + dy;
+              if (nx >= 0 && nx < 10 && ny >= 0 && ny < 10) {
+                allCells.push([nx, ny]);
+              }
+            }
+          }
+        }
+
+        const canPlace = coords.every(([cx, cy]) => !reserved.has(`${cx},${cy}`));
+
+        if (canPlace) {
+          coords.forEach(([cx, cy]) => taken.add(`${cx},${cy}`));
+
+          allCells.forEach(([cx, cy]) => reserved.add(`${cx},${cy}`));
+
           ships.push({
             type:
               length === 1 ? 'small' : length === 2 ? 'medium' : length === 3 ? 'large' : 'huge',
@@ -37,6 +61,10 @@ export function generateRandomShips(): Ship[] {
           });
           placed = true;
         }
+      }
+
+      if (!placed) {
+        console.error(`Failed to place ship of length ${length}`);
       }
     }
   }

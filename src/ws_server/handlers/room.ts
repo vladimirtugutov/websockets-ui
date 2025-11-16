@@ -2,7 +2,13 @@ import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { broadcast } from '../utils/broadcast.js';
-import { createRoom, addUserToRoom, getAvailableRooms } from '../db/roomsDb.js';
+import {
+  createRoom,
+  addUserToRoom,
+  getAvailableRooms,
+  type Room,
+  type RoomUser,
+} from '../db/roomsDb.js';
 import { initGame, getGame, socketToGamePlayer } from '../db/gamesDb.js';
 import { generateRandomShips } from '../utils/generateShips.js';
 import { initBoardFromShips } from '../utils/board.js';
@@ -180,20 +186,42 @@ export function broadcastUpdateRoom() {
 }
 
 export function handleSinglePlay(socket: ws.WebSocket, message: IncomingMessage) {
-  const index = getUserIndexFromSocket(socket);
-  if (!index) {
-    send(socket, {
-      type: 'error',
-      data: 'User not registered',
-      id: message.id,
-    });
-    return;
-  }
+  const userIndex = getUserIndexFromSocket(socket);
+  if (!userIndex) return;
 
-  handleCreateRoom(socket, {
-    ...message,
-    data: {
-      name: 'bot',
-    },
+  const humanUser: RoomUser = {
+    name: userIndex,
+    index: userIndex,
+    ws: socket,
+  };
+
+  const room = createRoom(humanUser);
+  const gameId = room.roomId;
+
+  console.log('Created single-player room:', { roomId: room.roomId, user: userIndex });
+
+  const botId = `bot_${Date.now()}`;
+  const botSocket = createBotSocket(botId, gameId);
+
+  initGame(gameId, [
+    [userIndex, socket],
+    [botId, botSocket],
+  ]);
+
+  socketToGamePlayer.set(socket, { gameId, playerId: userIndex });
+  socketToGamePlayer.set(botSocket, { gameId, playerId: botId });
+
+  console.log('[handleSinglePlay] Game initialized:', { gameId, humanId: userIndex, botId });
+
+  send(socket, {
+    type: 'create_game',
+    data: { idGame: gameId, idPlayer: userIndex },
+    id: 0,
+  });
+
+  send(botSocket, {
+    type: 'create_game',
+    data: { idGame: gameId, idPlayer: botId },
+    id: 0,
   });
 }
