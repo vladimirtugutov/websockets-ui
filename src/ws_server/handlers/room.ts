@@ -129,7 +129,7 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
   if (!room) {
     send(socket, {
       type: 'error',
-      data: 'Room not found or already full',
+      data: 'Room not found, already full, or you are already in this room',
       id: message.id,
     });
     return;
@@ -158,20 +158,20 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
         playerId: u.index,
       });
     }
+
+    for (const user of room.roomUsers) {
+      send(user.ws, {
+        type: 'create_game',
+        data: {
+          idGame: room.roomId,
+          idPlayer: user.index,
+        },
+        id: 0,
+      });
+    }
   }
 
   broadcastUpdateRoom();
-
-  for (const user of room.roomUsers) {
-    send(user.ws, {
-      type: 'create_game',
-      data: {
-        idGame: room.roomId,
-        idPlayer: user.index,
-      },
-      id: 0,
-    });
-  }
 }
 
 export function broadcastUpdateRoom() {

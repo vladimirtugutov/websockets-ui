@@ -34,9 +34,27 @@ export function addUserToRoom(roomId: string, user: RoomUser): Room | null {
   );
 
   const room = rooms.find((r) => r.roomId === String(roomId));
-  if (!room || room.roomUsers.length >= 2) return null;
+
+  if (!room) {
+    console.log('[addUserToRoom] Room not found');
+    return null;
+  }
+
+  if (room.roomUsers.length >= 2) {
+    console.log('[addUserToRoom] Room is full');
+    return null;
+  }
+
+  const isAlreadyInRoom = room.roomUsers.some((u) => u.index === user.index);
+  if (isAlreadyInRoom) {
+    console.log(`[addUserToRoom] User ${user.index} is already in room ${roomId}`);
+    return null;
+  }
 
   room.roomUsers.push(user);
+  console.log(
+    `[addUserToRoom] Added user ${user.index} to room ${roomId}. Total users: ${room.roomUsers.length}`
+  );
   return room;
 }
 
