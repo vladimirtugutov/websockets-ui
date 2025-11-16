@@ -1,14 +1,5 @@
-import { Ship } from '../db/gamesDb.js';
+import { Ship, BoardCell, CellStatus } from '../types/game.js';
 
-export type CellStatus = 'empty' | 'ship' | 'hit' | 'miss' | 'killed';
-
-export type BoardCell = {
-  x: number;
-  y: number;
-  status: CellStatus;
-};
-
-// 1. Создать пустую доску 10x10
 export function createEmptyBoard(): BoardCell[][] {
   return Array.from({ length: 10 }, (_, y) =>
     Array.from({ length: 10 }, (_, x) => ({
@@ -19,23 +10,26 @@ export function createEmptyBoard(): BoardCell[][] {
   );
 }
 
-// 2. Разместить корабли на доске
 export function initBoardFromShips(ships: Ship[]): BoardCell[][] {
   const board = createEmptyBoard();
 
   for (const ship of ships) {
     for (let i = 0; i < ship.length; i++) {
-      const x = ship.direction ? ship.position.x + i : ship.position.x;
-      const y = ship.direction ? ship.position.y : ship.position.y + i;
+      const x = ship.direction ? ship.position.x : ship.position.x + i;
+      const y = ship.direction ? ship.position.y + i : ship.position.y;
 
-      board[y][x].status = 'ship';
+      if (x >= 0 && x < 10 && y >= 0 && y < 10) {
+        board[y][x].status = 'ship';
+      } else {
+        console.error(`[initBoardFromShips] Ship out of bounds at (${x}, ${y}):`, ship);
+      }
     }
   }
 
   return board;
 }
 
-// 3. Преобразовать координаты в строку и обратно
+
 export function coordKey(x: number, y: number): string {
   return `${x},${y}`;
 }
@@ -44,7 +38,6 @@ export function parseCoord(key: string): [number, number] {
   return key.split(',').map(Number) as [number, number];
 }
 
-// Проверка, убит ли весь корабль (все клетки = 'hit')
 export function isShipKilled(board: BoardCell[][], ship: Ship): boolean {
   for (let i = 0; i < ship.length; i++) {
     const x = ship.direction ? ship.position.x + i : ship.position.x;
@@ -54,7 +47,6 @@ export function isShipKilled(board: BoardCell[][], ship: Ship): boolean {
   return true;
 }
 
-// Пометить клетки вокруг убитого корабля как 'miss'
 export function getSurroundingMisses(ship: Ship): [number, number][] {
   const coords: [number, number][] = [];
 
@@ -64,7 +56,6 @@ export function getSurroundingMisses(ship: Ship): [number, number][] {
         const x = ship.direction ? ship.position.x + i : ship.position.x + dx;
         const y = ship.direction ? ship.position.y + dy : ship.position.y + i;
 
-        // исключаем клетки самого корабля
         if (
           i >= 0 &&
           i < ship.length &&
@@ -82,7 +73,6 @@ export function getSurroundingMisses(ship: Ship): [number, number][] {
   return coords;
 }
 
-// Выполнить выстрел и вернуть статус
 export function applyAttack(board: BoardCell[][], x: number, y: number): CellStatus {
   const cell = board[y][x];
 
@@ -96,5 +86,5 @@ export function applyAttack(board: BoardCell[][], x: number, y: number): CellSta
     return 'miss';
   }
 
-  return cell.status; // уже 'miss' или 'hit'
+  return cell.status;
 }

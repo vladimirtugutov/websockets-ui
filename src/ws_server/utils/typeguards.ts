@@ -6,12 +6,16 @@ export type AttackData = {
 };
 
 export function isAttackData(obj: unknown): obj is AttackData {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+  
+  const data = obj as Record<string, unknown>;
+  
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    typeof (obj as any).x === 'number' &&
-    typeof (obj as any).y === 'number' &&
-    typeof (obj as any).gameId === 'string' &&
-    typeof (obj as any).indexPlayer === 'string'
+    typeof data.x === 'number' &&
+    typeof data.y === 'number' &&
+    typeof data.gameId === 'string' &&
+    typeof data.indexPlayer === 'string'
   );
 }

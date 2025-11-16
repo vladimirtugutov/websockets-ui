@@ -1,4 +1,4 @@
-import { Ship } from '../db/gamesDb.js';
+import { Ship } from '../types/game.js';
 
 export function generateRandomShips(): Ship[] {
   const ships: Ship[] = [];

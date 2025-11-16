@@ -51,8 +51,13 @@ wss.on('connection', (socket: ws.WebSocket) => {
         case 'add_user_to_room':
           handleAddUserToRoom(socket, message);
           break;
-        case 'add_ships':
-          handleAddShips(socket, message);
+        case 'add_ships':          
+          try {
+            handleAddShips(socket, message);
+          } catch (err) {
+            console.error('[server] ERROR in handleAddShips:', err);
+            throw err;
+          }
           break;
         case 'attack':
           handleAttack(socket, message);

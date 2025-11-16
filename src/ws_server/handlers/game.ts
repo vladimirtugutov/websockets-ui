@@ -47,7 +47,14 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   if (player.moves.has(key)) return;
   player.moves.add(key);
 
+  console.log(`[handleAttack] Cell at (${x},${y}) status BEFORE: ${enemy.board[y][x].status}`);
+
   const result = applyAttack(enemy.board, x, y);
+
+
+console.log(`[handleAttack] Attack result: ${result}`);
+console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x].status}`);
+
 
   for (const p of [player, enemy]) {
     send(p.ws, {

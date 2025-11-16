@@ -1,12 +1,37 @@
 import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
+import { Ship } from '../types/game.js';
 import {
   addShips,
   getGame,
-  Ship,
   socketToGamePlayer,
 } from '../db/gamesDb.js';
+
+function validateShips(ships: Ship[]): boolean {
+  const taken = new Set<string>();
+  
+  for (const ship of ships) {
+    for (let i = 0; i < ship.length; i++) {
+      const x = ship.direction ? ship.position.x : ship.position.x + i;
+      const y = ship.direction ? ship.position.y + i : ship.position.y;
+      
+      if (x < 0 || x >= 10 || y < 0 || y >= 10) {
+        console.error(`[validateShips] Ship out of bounds:`, ship);
+        return false;
+      }
+      
+      const key = `${x},${y}`;
+      if (taken.has(key)) {
+        console.error(`[validateShips] Ships overlap at (${x},${y})`);
+        return false;
+      }
+      taken.add(key);
+    }
+  }
+  
+  return ships.length === 10;
+}
 
 export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
   const entry = socketToGamePlayer.get(socket);
@@ -26,7 +51,7 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
 
   let data = message.data;
 
-  if (typeof data === 'string') {
+  while (typeof data === 'string') {
     try {
       data = JSON.parse(data);
     } catch (e) {
@@ -40,12 +65,8 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
     }
   }
 
-  if (
-    !data ||
-    typeof data !== 'object' ||
-    !Array.isArray((data as any).ships)
-  ) {
-    console.warn('[handleAddShips] Invalid message format:', data);
+  if (!data || typeof data !== 'object' || !Array.isArray((data as { ships?: unknown[] }).ships)) {
+    console.warn('[handleAddShips] Invalid message format after parsing:', data);
     send(socket, {
       type: 'error',
       data: 'Invalid message format',
@@ -55,6 +76,16 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
   }
 
   const { ships } = data as { ships: Ship[] };
+
+  if (!validateShips(ships)) {
+  console.warn('[handleAddShips] Invalid ships configuration');
+  send(socket, {
+    type: 'error',
+    data: 'Invalid ships placement',
+    id: message.id,
+  });
+  return;
+}
 
   const success = addShips(gameId, playerId, ships);
   if (!success) {
