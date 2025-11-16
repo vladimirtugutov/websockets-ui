@@ -93,3 +93,7 @@ export function addShips(gameId: string, playerId: string, ships: Ship[]): boole
 export function getGame(gameId: string): GameState | undefined {
   return games[gameId];
 }
+
+export function deleteGame(gameId: string) {
+  delete games[gameId];
+}

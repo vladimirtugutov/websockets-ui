@@ -8,7 +8,10 @@ import { addClient, removeClient } from './utils/broadcast.js';
 import { handleCreateRoom, handleAddUserToRoom, handleSinglePlay } from './handlers/room.js';
 import { handleAddShips } from './handlers/ships.js';
 import { handleAttack, handleRandomAttack } from './handlers/game.js';
-import { unbindSocketFromUser } from './db/usersDb.js';
+import { socketToGamePlayer, getGame, deleteGame } from './db/gamesDb.js';
+import { increaseWins, unbindSocketFromUser, getUserList } from './db/usersDb.js';
+import { broadcast } from './utils/broadcast.js';
+import { broadcastUpdateRoom } from './handlers/room.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -85,8 +88,49 @@ wss.on('connection', (socket: ws.WebSocket) => {
 
   socket.on('close', () => {
     console.log('🔌 Client disconnected');
+
+    const playerInfo = socketToGamePlayer.get(socket);
+
+    if (playerInfo) {
+      const { gameId, playerId } = playerInfo;
+      const game = getGame(gameId);
+
+      if (game) {
+        console.log(`[Disconnect] Player ${playerId} disconnected from game ${gameId}`);
+
+        const otherPlayerId = Object.keys(game.players).find((id) => id !== playerId);
+
+        if (otherPlayerId && !otherPlayerId.startsWith('bot_')) {
+          const otherPlayer = game.players[otherPlayerId];
+
+          const otherPlayerName = otherPlayerId;
+          increaseWins(otherPlayerName);
+
+          send(otherPlayer.ws, {
+            type: 'finish',
+            data: {
+              winPlayer: otherPlayerId,
+            },
+            id: 0,
+          });
+
+          console.log(`[Disconnect] ${otherPlayerName} wins by forfeit`);
+        }
+
+        deleteGame(gameId);
+        socketToGamePlayer.delete(socket);
+      }
+    }
+
     unbindSocketFromUser(socket);
     removeClient(socket);
+
+    broadcastUpdateRoom();
+    broadcast({
+      type: 'update_winners',
+      data: getUserList(),
+      id: 0,
+    });
   });
 });
 
