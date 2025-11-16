@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 const server = createServer(httpHandler);
 const wss = new ws.WebSocketServer({ server });
 
-console.log(`✅ WebSocket + HTTP server started on http://localhost:${PORT}`);
+console.log(`WebSocket + HTTP server started on http://localhost:${PORT}`);
 
 wss.on('connection', (socket: ws.WebSocket) => {
   console.log('🔌 Client connected');
@@ -31,9 +31,15 @@ wss.on('connection', (socket: ws.WebSocket) => {
       const rawStr = rawData.toString();
       let message: IncomingMessage = JSON.parse(rawStr);
 
-      message = normalizeMessageData(message);
+      while (typeof message.data === 'string') {
+        try {
+          message.data = JSON.parse(message.data);
+        } catch (e) {
+          break;
+        }
+      }
 
-      console.log('📥 Received:', message);
+      console.log('Received:', message);
 
       switch (message.type) {
         case 'reg':
@@ -58,7 +64,7 @@ wss.on('connection', (socket: ws.WebSocket) => {
           handleSinglePlay(socket, message);
           break;
         default:
-          console.warn('⚠️ Unknown message type:', message.type);
+          console.warn('Unknown message type:', message.type);
           send(socket, {
             type: 'error',
             data: `Unknown command: ${message.type}`,
@@ -66,7 +72,7 @@ wss.on('connection', (socket: ws.WebSocket) => {
           });
       }
     } catch (err) {
-      console.error('❌ Invalid message format:', rawData.toString());
+      console.error('Invalid message format:', rawData.toString());
       send(socket, {
         type: 'error',
         data: 'Invalid message format',
@@ -82,22 +88,5 @@ wss.on('connection', (socket: ws.WebSocket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Listening on http://localhost:${PORT}`);
+  console.log(`Listening on http://localhost:${PORT}`);
 });
-
-function normalizeMessageData(message: IncomingMessage): IncomingMessage {
-  let { data } = message;
-
-  while (typeof data === 'string') {
-    try {
-      data = JSON.parse(data);
-    } catch (e) {
-      break;
-    }
-  }
-
-  return {
-    ...message,
-    data,
-  };
-}

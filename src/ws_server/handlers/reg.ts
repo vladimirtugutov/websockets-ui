@@ -51,16 +51,12 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
   };
 
   send(socket, regResponse);
-  bindSocketToUser(socket, name);
 
-  const rooms = getAvailableRooms().map((r) => ({
-    roomId: r.roomId,
-    roomUsers: r.roomUsers.map(({ name, index }) => ({ name, index })),
-  }));
+  bindSocketToUser(socket, name);
 
   broadcast({
     type: 'update_room',
-    data: rooms,
+    data: getAvailableRooms(),
     id: 0,
   });
 
@@ -70,3 +66,4 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
     id: 0,
   });
 }
+

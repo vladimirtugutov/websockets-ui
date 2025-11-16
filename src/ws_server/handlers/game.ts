@@ -10,45 +10,13 @@ import {
 } from '../utils/board.js';
 import { increaseWins, getUserList } from '../db/usersDb.js';
 import { broadcast } from '../utils/broadcast.js';
-
-type AttackData = {
-  x: number;
-  y: number;
-  gameId: string;
-  indexPlayer: string;
-};
+import { isAttackData } from '../utils/typeguards.js';
 
 export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
-  let raw = message.data;
-  let data: AttackData;
+  const data = message.data;
 
-  // 🔍 Попробуем распарсить JSON-строку
-  try {
-    if (typeof raw === 'string') {
-      data = JSON.parse(raw) as AttackData;
-    } else {
-      data = raw as AttackData;
-    }
-  } catch (err) {
-    console.error('[handleAttack] ❌ Failed to parse message.data:', raw);
-    send(socket, {
-      type: 'error',
-      data: 'Invalid JSON in attack',
-      id: message.id,
-    });
-    return;
-  }
-
-  // 🧱 Валидация типов
-  if (
-    typeof data !== 'object' ||
-    data === null ||
-    typeof data.x !== 'number' ||
-    typeof data.y !== 'number' ||
-    typeof data.gameId !== 'string' ||
-    typeof data.indexPlayer !== 'string'
-  ) {
-    console.error('[handleAttack] ❌ Invalid message format:', message);
+  if (!isAttackData(data)) {
+    console.error('[handleAttack] Invalid message format:', message);
     send(socket, {
       type: 'error',
       data: 'Invalid message format',
@@ -57,20 +25,14 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     return;
   }
 
-  const { gameId, x, y, indexPlayer } = data;
+  const { x, y, gameId, indexPlayer } = data;
 
-  console.log('[handleAttack] ✅ Received attack:', { gameId, x, y, indexPlayer });
+  console.log('[handleAttack] Received attack:', { x, y, gameId, indexPlayer });
 
   const game = getGame(gameId);
-  if (!game || game.isFinished) {
-    console.warn('[handleAttack] ⚠️ Game not found or already finished:', gameId);
-    return;
-  }
+  if (!game || game.isFinished) return;
 
-  if (indexPlayer !== game.currentPlayerIndex) {
-    console.warn('[handleAttack] ⛔ Not this player\'s turn:', indexPlayer);
-    return;
-  }
+  if (indexPlayer !== game.currentPlayerIndex) return;
 
   const enemyId = Object.keys(game.players).find((id) => id !== indexPlayer);
   if (!enemyId) return;
@@ -80,11 +42,10 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
 
   const key = coordKey(x, y);
   if (player.moves.has(key)) return;
-
   player.moves.add(key);
+
   const result = applyAttack(enemy.board, x, y);
 
-  // 🎯 отправим результат обеим сторонам
   for (const p of [player, enemy]) {
     send(p.ws, {
       type: 'attack',
@@ -97,12 +58,10 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     });
   }
 
-  // 💀 проверка на убийство
   if (result === 'hit') {
     const killedShip = enemy.ships.find((ship) =>
       isShipKilled(enemy.board, ship)
     );
-
     if (killedShip) {
       const cells = getSurroundingMisses(killedShip);
       for (const [sx, sy] of cells) {
@@ -121,7 +80,7 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
           }
         }
       }
-      return; // 🎯 игрок ходит снова
+      return;
     }
   }
 
@@ -136,9 +95,7 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     for (const id in game.players) {
       send(game.players[id].ws, {
         type: 'finish',
-        data: {
-          winPlayer: indexPlayer,
-        },
+        data: { winPlayer: indexPlayer },
         id: 0,
       });
     }
