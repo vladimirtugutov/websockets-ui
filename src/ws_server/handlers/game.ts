@@ -32,7 +32,10 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   const game = getGame(gameId);
   if (!game || game.isFinished) return;
 
-  if (indexPlayer !== game.currentPlayerIndex) return;
+  if (indexPlayer !== game.currentPlayerIndex) {
+    console.warn(`[handleAttack] Not player's turn. Current: ${game.currentPlayerIndex}, Attempted: ${indexPlayer}`);
+    return;
+  }
 
   const enemyId = Object.keys(game.players).find((id) => id !== indexPlayer);
   if (!enemyId) return;
@@ -80,8 +83,25 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
           }
         }
       }
+
+      for (const id in game.players) {
+        send(game.players[id].ws, {
+          type: 'turn',
+          data: { currentPlayer: indexPlayer },
+          id: 0,
+        });
+      }
       return;
     }
+
+    for (const id in game.players) {
+      send(game.players[id].ws, {
+        type: 'turn',
+        data: { currentPlayer: indexPlayer },
+        id: 0,
+      });
+    }
+    return;
   }
 
   const allShipsKilled = enemy.ships.every((ship) =>

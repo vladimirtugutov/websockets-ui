@@ -4,7 +4,6 @@ import { send } from '../utils/send.js';
 import {
   addShips,
   getGame,
-  isGameReady,
   Ship,
   socketToGamePlayer,
 } from '../db/gamesDb.js';
@@ -76,8 +75,10 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
     return;
   }
 
-  if (!isGameReady(gameId)) {
-    console.log(`[handleAddShips] Game ${gameId} not ready yet`);
+  const allPlayersReady = Object.values(game.players).every(p => p.ships.length > 0);
+
+  if (!allPlayersReady) {
+    console.log(`[handleAddShips] Game ${gameId} not ready yet - waiting for other player`);
     return;
   }
 
@@ -92,7 +93,6 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
       data: {
         ships: player.ships,
         currentPlayerIndex: currentPlayer,
-        playerId: id,
       },
       id: 0,
     });

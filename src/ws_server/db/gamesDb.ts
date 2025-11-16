@@ -63,6 +63,17 @@ export function addPlayerToGame(gameId: string, playerId: string, socket: ws.Web
   };
 }
 
+function createEmptyBoard(): BoardCell[][] {
+    const board: BoardCell[][] = [];
+    for (let y = 0; y < 10; y++) {
+        board[y] = [];
+        for (let x = 0; x < 10; x++) {
+            board[y][x] = { x, y, status: 'empty' };
+        }
+    }
+    return board;
+}
+
 export function addShips(gameId: string, playerId: string, ships: Ship[]): boolean {
   const game = games[gameId];
   if (!game) {
@@ -74,16 +85,37 @@ export function addShips(gameId: string, playerId: string, ships: Ship[]): boole
     console.log(`[addShips] Player ${playerId} not found in game ${gameId}`);
     return false;
   }
-
   game.players[playerId].ships = ships;
-  console.log(`[addShips] Ships set for player ${playerId} in game ${gameId}`);
+  
+  const board = createEmptyBoard();
+  
+  for (const ship of ships) {
+    const { x: startX, y: startY } = ship.position;
+    const dx = ship.direction ? 1 : 0;
+    const dy = ship.direction ? 0 : 1;
+    
+    for (let i = 0; i < ship.length; i++) {
+      const x = startX + i * dx;
+      const y = startY + i * dy;
+      
+      if (y >= 0 && y < 10 && x >= 0 && x < 10) {
+        board[y][x].status = 'ship';
+      }
+    }
+  }
+  
+  game.players[playerId].board = board;
+  console.log(`[addShips] Ships set and board created for player ${playerId} in game ${gameId}`);
+  
+  const allPlayersReady = Object.values(game.players).every(p => p.ships.length > 0);
+  
+  if (allPlayersReady && !game.currentPlayerIndex) {
+    const playerIds = Object.keys(game.players);
+    game.currentPlayerIndex = playerIds[0];
+    console.log(`[addShips] Game ${gameId} ready! First turn: ${game.currentPlayerIndex}`);
+  }
 
   return true;
-}
-
-export function isGameReady(gameId: string): boolean {
-  const game = games[gameId];
-  return !!game && Object.values(game.players).every((p) => p.ships.length > 0);
 }
 
 export function getGame(gameId: string): GameState | undefined {
