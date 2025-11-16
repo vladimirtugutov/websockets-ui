@@ -22,8 +22,6 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
 
   const { x, y, gameId, indexPlayer } = data;
 
-  console.log('[handleAttack] Received attack:', { x, y, gameId, indexPlayer });
-
   const game = getGame(gameId);
   if (!game || game.isFinished) return;
 
@@ -43,14 +41,7 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   const key = coordKey(x, y);
   if (player.moves.has(key)) return;
   player.moves.add(key);
-
-  console.log(`[handleAttack] Cell at (${x},${y}) status BEFORE: ${enemy.board[y][x].status}`);
-
   const result = applyAttack(enemy.board, x, y);
-
-  console.log(`[handleAttack] Attack result: ${result}`);
-  console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x].status}`);
-
   for (const p of [player, enemy]) {
     send(p.ws, {
       type: 'attack',
@@ -64,8 +55,6 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   }
 
   if (result === 'hit') {
-    console.log(`[handleAttack] Checking all ships for kill status...`);
-
     let newlyKilledShip = null;
 
     for (const ship of enemy.ships) {
@@ -86,7 +75,6 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
     }
 
     if (newlyKilledShip) {
-      console.log(`[handleAttack] FOUND NEWLY KILLED SHIP:`, newlyKilledShip);
       const cells = getSurroundingMisses(newlyKilledShip);
       for (const [sx, sy] of cells) {
         if (enemy.board[sy][sx].status === 'empty') {

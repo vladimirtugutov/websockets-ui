@@ -50,7 +50,6 @@ export function createBotSocket(botId: string, gameId: string): ws.WebSocket {
             }
 
             if (isValid && ships) {
-              // DEBUG: Show bot's board layout
               const debugBoard: string[][] = Array.from({ length: 10 }, () => Array(10).fill('.'));
 
               for (const ship of ships) {
