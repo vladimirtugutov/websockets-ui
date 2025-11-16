@@ -69,11 +69,30 @@ console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x
   }
 
   if (result === 'hit') {
-    const killedShip = enemy.ships.find((ship) =>
-      isShipKilled(enemy.board, ship)
-    );
-    if (killedShip) {
-      const cells = getSurroundingMisses(killedShip);
+  console.log(`[handleAttack] Checking all ships for kill status...`);
+  
+  let newlyKilledShip = null;
+  
+  for (const ship of enemy.ships) {
+    let containsCell = false;
+    for (let i = 0; i < ship.length; i++) {
+      const sx = ship.direction ? ship.position.x : ship.position.x + i;
+      const sy = ship.direction ? ship.position.y + i : ship.position.y;
+      if (sx === x && sy === y) {
+        containsCell = true;
+        break;
+      }
+    }    
+
+    if (containsCell && isShipKilled(enemy.board, ship)) {
+      newlyKilledShip = ship;
+      break;
+    }
+  }
+  
+  if (newlyKilledShip) {
+    console.log(`[handleAttack] FOUND NEWLY KILLED SHIP:`, newlyKilledShip);
+    const cells = getSurroundingMisses(newlyKilledShip);
       for (const [sx, sy] of cells) {
         if (enemy.board[sy][sx].status === 'empty') {
           enemy.board[sy][sx].status = 'miss';
@@ -89,6 +108,32 @@ console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x
             });
           }
         }
+      }
+      
+      const allShipsKilled = enemy.ships.every((ship) =>
+        isShipKilled(enemy.board, ship)
+      );
+
+      if (allShipsKilled) {
+        game.isFinished = true;
+        increaseWins(indexPlayer);
+
+        for (const id in game.players) {
+          send(game.players[id].ws, {
+            type: 'finish',
+            data: { winPlayer: indexPlayer },
+            id: 0,
+          });
+        }
+
+        broadcast({
+          type: 'update_winners',
+          data: getUserList(),
+          id: 0,
+        });
+
+        delete games[gameId];
+        return;
       }
 
       for (const id in game.players) {

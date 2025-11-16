@@ -40,8 +40,8 @@ export function parseCoord(key: string): [number, number] {
 
 export function isShipKilled(board: BoardCell[][], ship: Ship): boolean {
   for (let i = 0; i < ship.length; i++) {
-    const x = ship.direction ? ship.position.x + i : ship.position.x;
-    const y = ship.direction ? ship.position.y : ship.position.y + i;
+    const x = ship.direction ? ship.position.x : ship.position.x + i;
+    const y = ship.direction ? ship.position.y + i : ship.position.y;
     if (board[y][x].status !== 'hit') return false;
   }
   return true;
@@ -53,8 +53,8 @@ export function getSurroundingMisses(ship: Ship): [number, number][] {
   for (let i = -1; i <= ship.length; i++) {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
-        const x = ship.direction ? ship.position.x + i : ship.position.x + dx;
-        const y = ship.direction ? ship.position.y + dy : ship.position.y + i;
+        const x = ship.direction ? ship.position.x + dx : ship.position.x + i;
+        const y = ship.direction ? ship.position.y + i : ship.position.y + dy;
 
         if (
           i >= 0 &&
