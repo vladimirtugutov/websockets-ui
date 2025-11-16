@@ -9,8 +9,8 @@
         "dev": "nodemon --watch src --exec \"node --loader ts-node/esm\" src/ws_server/server.ts",
         "start:front": "node src/http_server/index.js",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "lint": "eslint . --ext .ts",
-        "lint:fix": "eslint . --ext .ts --fix",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
         "format": "prettier --write \"src/**/*.ts\""
     },
     "author": "Andrei Auchynnikau",
