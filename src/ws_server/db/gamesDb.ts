@@ -27,7 +27,7 @@ export function initGame(gameId: string, players: [string, ws.WebSocket][]) {
       ws: socket,
       ships: [],
       board: [],
-      moves: new Set()
+      moves: new Set(),
     };
   }
 
@@ -35,7 +35,7 @@ export function initGame(gameId: string, players: [string, ws.WebSocket][]) {
     gameId,
     players: gamePlayers,
     currentPlayerIndex: '',
-    isFinished: false
+    isFinished: false,
   };
 }
 
@@ -45,7 +45,7 @@ export function addPlayerToGame(gameId: string, playerId: string, socket: ws.Web
     ws: socket,
     ships: [],
     board: [],
-    moves: new Set()
+    moves: new Set(),
   };
 }
 
@@ -55,7 +55,7 @@ export function addShips(gameId: string, playerId: string, ships: Ship[]): boole
   if (!game.players[playerId]) return false;
 
   game.players[playerId].ships = ships;
-  
+
   const board: BoardCell[][] = [];
   for (let y = 0; y < 10; y++) {
     board[y] = [];
@@ -63,25 +63,25 @@ export function addShips(gameId: string, playerId: string, ships: Ship[]): boole
       board[y][x] = { x, y, status: 'empty' };
     }
   }
-  
+
   for (const ship of ships) {
     const dx = ship.direction ? 0 : 1;
     const dy = ship.direction ? 1 : 0;
-    
+
     for (let i = 0; i < ship.length; i++) {
       const x = ship.position.x + i * dx;
       const y = ship.position.y + i * dy;
-      
+
       if (x >= 0 && x < 10 && y >= 0 && y < 10) {
         board[y][x].status = 'ship';
       }
     }
   }
-  
+
   game.players[playerId].board = board;
-  
-  const allPlayersReady = Object.values(game.players).every(p => p.ships.length > 0);
-  
+
+  const allPlayersReady = Object.values(game.players).every((p) => p.ships.length > 0);
+
   if (allPlayersReady && !game.currentPlayerIndex) {
     const playerIds = Object.keys(game.players);
     game.currentPlayerIndex = playerIds[0];
@@ -89,7 +89,6 @@ export function addShips(gameId: string, playerId: string, ships: Ship[]): boole
 
   return true;
 }
-
 
 export function getGame(gameId: string): GameState | undefined {
   return games[gameId];

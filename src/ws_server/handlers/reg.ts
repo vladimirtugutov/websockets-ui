@@ -66,4 +66,3 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
     id: 0,
   });
 }
-

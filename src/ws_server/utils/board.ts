@@ -29,7 +29,6 @@ export function initBoardFromShips(ships: Ship[]): BoardCell[][] {
   return board;
 }
 
-
 export function coordKey(x: number, y: number): string {
   return `${x},${y}`;
 }
@@ -56,12 +55,7 @@ export function getSurroundingMisses(ship: Ship): [number, number][] {
         const x = ship.direction ? ship.position.x + dx : ship.position.x + i;
         const y = ship.direction ? ship.position.y + i : ship.position.y + dy;
 
-        if (
-          i >= 0 &&
-          i < ship.length &&
-          dx === 0 &&
-          dy === 0
-        ) continue;
+        if (i >= 0 && i < ship.length && dx === 0 && dy === 0) continue;
 
         if (x >= 0 && x < 10 && y >= 0 && y < 10) {
           coords.push([x, y]);

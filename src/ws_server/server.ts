@@ -5,11 +5,7 @@ import { IncomingMessage } from './types/messages.js';
 import { handleReg } from './handlers/reg.js';
 import { send } from './utils/send.js';
 import { addClient, removeClient } from './utils/broadcast.js';
-import {
-  handleCreateRoom,
-  handleAddUserToRoom,
-  handleSinglePlay,
-} from './handlers/room.js';
+import { handleCreateRoom, handleAddUserToRoom, handleSinglePlay } from './handlers/room.js';
 import { handleAddShips } from './handlers/ships.js';
 import { handleAttack, handleRandomAttack } from './handlers/game.js';
 
@@ -51,7 +47,7 @@ wss.on('connection', (socket: ws.WebSocket) => {
         case 'add_user_to_room':
           handleAddUserToRoom(socket, message);
           break;
-        case 'add_ships':          
+        case 'add_ships':
           try {
             handleAddShips(socket, message);
           } catch (err) {

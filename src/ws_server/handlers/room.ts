@@ -2,19 +2,12 @@ import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { broadcast } from '../utils/broadcast.js';
-import {
-  createRoom,
-  addUserToRoom,
-  getAvailableRooms,
-} from '../db/roomsDb.js';
+import { createRoom, addUserToRoom, getAvailableRooms } from '../db/roomsDb.js';
 import { initGame, getGame, socketToGamePlayer } from '../db/gamesDb.js';
 import { generateRandomShips } from '../utils/generateShips.js';
 import { initBoardFromShips } from '../utils/board.js';
 import { createBotSocket } from '../utils/botSocket.js';
-import {
-  getUserIndexFromSocket,
-  getUserList,
-} from '../db/usersDb.js';
+import { getUserIndexFromSocket, getUserList } from '../db/usersDb.js';
 import { handleAddShips } from '../handlers/ships.js';
 
 export function handleCreateRoom(socket: ws.WebSocket, message: IncomingMessage) {
@@ -140,7 +133,10 @@ export function handleAddUserToRoom(socket: ws.WebSocket, message: IncomingMessa
     console.log('[handleAddUserToRoom] Starting initGame');
     const gameId = room.roomId;
 
-    initGame(gameId, room.roomUsers.map((u) => [u.index, u.ws]));
+    initGame(
+      gameId,
+      room.roomUsers.map((u) => [u.index, u.ws])
+    );
 
     const playerIds = room.roomUsers.map((u) => u.index);
     const currentPlayer = playerIds[Math.floor(Math.random() * playerIds.length)];

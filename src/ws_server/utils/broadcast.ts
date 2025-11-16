@@ -18,7 +18,7 @@ export function broadcast<T>(message: OutgoingMessage<T>) {
   };
 
   const msg = JSON.stringify(doubleSerialized);
-  console.log('📣 Broadcasting to clients:\n', msg);
+  console.log('Broadcasting to clients:\n', msg);
 
   for (const client of clients) {
     if (client.readyState === ws.WebSocket.OPEN) {

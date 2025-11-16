@@ -9,9 +9,9 @@ export function isAttackData(obj: unknown): obj is AttackData {
   if (typeof obj !== 'object' || obj === null) {
     return false;
   }
-  
+
   const data = obj as Record<string, unknown>;
-  
+
   return (
     typeof data.x === 'number' &&
     typeof data.y === 'number' &&

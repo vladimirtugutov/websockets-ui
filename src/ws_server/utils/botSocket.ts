@@ -8,7 +8,7 @@ export function createBotSocket(botId: string, gameId: string): ws.WebSocket {
     },
     close: () => {},
     on: () => {},
-    readyState: ws.WebSocket.OPEN
+    readyState: ws.WebSocket.OPEN,
   } as unknown as ws.WebSocket;
 
   setTimeout(() => {
@@ -17,8 +17,8 @@ export function createBotSocket(botId: string, gameId: string): ws.WebSocket {
       id: 0,
       data: {
         gameId,
-        indexPlayer: botId
-      }
+        indexPlayer: botId,
+      },
     });
   }, 1500);
 

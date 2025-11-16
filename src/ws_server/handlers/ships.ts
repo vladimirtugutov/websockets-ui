@@ -2,25 +2,21 @@ import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { Ship } from '../types/game.js';
-import {
-  addShips,
-  getGame,
-  socketToGamePlayer,
-} from '../db/gamesDb.js';
+import { addShips, getGame, socketToGamePlayer } from '../db/gamesDb.js';
 
 function validateShips(ships: Ship[]): boolean {
   const taken = new Set<string>();
-  
+
   for (const ship of ships) {
     for (let i = 0; i < ship.length; i++) {
       const x = ship.direction ? ship.position.x : ship.position.x + i;
       const y = ship.direction ? ship.position.y + i : ship.position.y;
-      
+
       if (x < 0 || x >= 10 || y < 0 || y >= 10) {
         console.error(`[validateShips] Ship out of bounds:`, ship);
         return false;
       }
-      
+
       const key = `${x},${y}`;
       if (taken.has(key)) {
         console.error(`[validateShips] Ships overlap at (${x},${y})`);
@@ -29,7 +25,7 @@ function validateShips(ships: Ship[]): boolean {
       taken.add(key);
     }
   }
-  
+
   return ships.length === 10;
 }
 
@@ -78,14 +74,14 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
   const { ships } = data as { ships: Ship[] };
 
   if (!validateShips(ships)) {
-  console.warn('[handleAddShips] Invalid ships configuration');
-  send(socket, {
-    type: 'error',
-    data: 'Invalid ships placement',
-    id: message.id,
-  });
-  return;
-}
+    console.warn('[handleAddShips] Invalid ships configuration');
+    send(socket, {
+      type: 'error',
+      data: 'Invalid ships placement',
+      id: message.id,
+    });
+    return;
+  }
 
   const success = addShips(gameId, playerId, ships);
   if (!success) {
@@ -106,7 +102,7 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
     return;
   }
 
-  const allPlayersReady = Object.values(game.players).every(p => p.ships.length > 0);
+  const allPlayersReady = Object.values(game.players).every((p) => p.ships.length > 0);
 
   if (!allPlayersReady) {
     console.log(`[handleAddShips] Game ${gameId} not ready yet - waiting for other player`);
@@ -117,7 +113,9 @@ export function handleAddShips(socket: ws.WebSocket, message: IncomingMessage) {
   console.log(`[handleAddShips] Game ${gameId} is ready. Current player: ${currentPlayer}`);
 
   for (const [id, player] of Object.entries(game.players)) {
-    console.log(`[handleAddShips] Sending start_game to ${id} — currentPlayerIndex: ${currentPlayer}`);
+    console.log(
+      `[handleAddShips] Sending start_game to ${id} — currentPlayerIndex: ${currentPlayer}`
+    );
 
     send(player.ws, {
       type: 'start_game',

@@ -21,19 +21,16 @@ export function generateRandomShips(): Ship[] {
         const x = Math.floor(Math.random() * (direction ? 10 - length : 10));
         const y = Math.floor(Math.random() * (direction ? 10 : 10 - length));
 
-        const coords = Array.from({ length }, (_, i) =>
-          `${direction ? x + i : x},${direction ? y : y + i}`
+        const coords = Array.from(
+          { length },
+          (_, i) => `${direction ? x + i : x},${direction ? y : y + i}`
         );
 
         if (coords.every((c) => !taken.has(c))) {
           coords.forEach((c) => taken.add(c));
           ships.push({
-            type: (
-                length === 1 ? 'small' :
-                length === 2 ? 'medium' :
-                length === 3 ? 'large' :
-                'huge'
-            ),
+            type:
+              length === 1 ? 'small' : length === 2 ? 'medium' : length === 3 ? 'large' : 'huge',
             length,
             direction,
             position: { x, y },

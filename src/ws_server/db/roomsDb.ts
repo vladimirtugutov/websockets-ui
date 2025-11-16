@@ -28,7 +28,10 @@ export function createRoom(user: RoomUser): Room {
 
 export function addUserToRoom(roomId: string, user: RoomUser): Room | null {
   console.log('roomId:', roomId);
-  console.log('rooms:', rooms.map(r => r.roomId));
+  console.log(
+    'rooms:',
+    rooms.map((r) => r.roomId)
+  );
 
   const room = rooms.find((r) => r.roomId === String(roomId));
   if (!room || room.roomUsers.length >= 2) return null;

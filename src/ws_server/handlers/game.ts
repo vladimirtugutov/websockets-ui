@@ -2,12 +2,7 @@ import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { getGame, games } from '../db/gamesDb.js';
 import { send } from '../utils/send.js';
-import {
-  applyAttack,
-  isShipKilled,
-  getSurroundingMisses,
-  coordKey,
-} from '../utils/board.js';
+import { applyAttack, isShipKilled, getSurroundingMisses, coordKey } from '../utils/board.js';
 import { increaseWins, getUserList } from '../db/usersDb.js';
 import { broadcast } from '../utils/broadcast.js';
 import { isAttackData } from '../utils/typeguards.js';
@@ -33,7 +28,9 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
   if (!game || game.isFinished) return;
 
   if (indexPlayer !== game.currentPlayerIndex) {
-    console.warn(`[handleAttack] Not player's turn. Current: ${game.currentPlayerIndex}, Attempted: ${indexPlayer}`);
+    console.warn(
+      `[handleAttack] Not player's turn. Current: ${game.currentPlayerIndex}, Attempted: ${indexPlayer}`
+    );
     return;
   }
 
@@ -51,10 +48,8 @@ export function handleAttack(socket: ws.WebSocket, message: IncomingMessage) {
 
   const result = applyAttack(enemy.board, x, y);
 
-
-console.log(`[handleAttack] Attack result: ${result}`);
-console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x].status}`);
-
+  console.log(`[handleAttack] Attack result: ${result}`);
+  console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x].status}`);
 
   for (const p of [player, enemy]) {
     send(p.ws, {
@@ -69,30 +64,30 @@ console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x
   }
 
   if (result === 'hit') {
-  console.log(`[handleAttack] Checking all ships for kill status...`);
-  
-  let newlyKilledShip = null;
-  
-  for (const ship of enemy.ships) {
-    let containsCell = false;
-    for (let i = 0; i < ship.length; i++) {
-      const sx = ship.direction ? ship.position.x : ship.position.x + i;
-      const sy = ship.direction ? ship.position.y + i : ship.position.y;
-      if (sx === x && sy === y) {
-        containsCell = true;
+    console.log(`[handleAttack] Checking all ships for kill status...`);
+
+    let newlyKilledShip = null;
+
+    for (const ship of enemy.ships) {
+      let containsCell = false;
+      for (let i = 0; i < ship.length; i++) {
+        const sx = ship.direction ? ship.position.x : ship.position.x + i;
+        const sy = ship.direction ? ship.position.y + i : ship.position.y;
+        if (sx === x && sy === y) {
+          containsCell = true;
+          break;
+        }
+      }
+
+      if (containsCell && isShipKilled(enemy.board, ship)) {
+        newlyKilledShip = ship;
         break;
       }
-    }    
-
-    if (containsCell && isShipKilled(enemy.board, ship)) {
-      newlyKilledShip = ship;
-      break;
     }
-  }
-  
-  if (newlyKilledShip) {
-    console.log(`[handleAttack] FOUND NEWLY KILLED SHIP:`, newlyKilledShip);
-    const cells = getSurroundingMisses(newlyKilledShip);
+
+    if (newlyKilledShip) {
+      console.log(`[handleAttack] FOUND NEWLY KILLED SHIP:`, newlyKilledShip);
+      const cells = getSurroundingMisses(newlyKilledShip);
       for (const [sx, sy] of cells) {
         if (enemy.board[sy][sx].status === 'empty') {
           enemy.board[sy][sx].status = 'miss';
@@ -109,10 +104,8 @@ console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x
           }
         }
       }
-      
-      const allShipsKilled = enemy.ships.every((ship) =>
-        isShipKilled(enemy.board, ship)
-      );
+
+      const allShipsKilled = enemy.ships.every((ship) => isShipKilled(enemy.board, ship));
 
       if (allShipsKilled) {
         game.isFinished = true;
@@ -156,9 +149,7 @@ console.log(`[handleAttack] Cell at (${x},${y}) status AFTER: ${enemy.board[y][x
     return;
   }
 
-  const allShipsKilled = enemy.ships.every((ship) =>
-    isShipKilled(enemy.board, ship)
-  );
+  const allShipsKilled = enemy.ships.every((ship) => isShipKilled(enemy.board, ship));
 
   if (allShipsKilled) {
     game.isFinished = true;
@@ -212,7 +203,8 @@ export function handleRandomAttack(socket: ws.WebSocket, message: IncomingMessag
 
   const tried = player.moves;
 
-  let x = 0, y = 0;
+  let x = 0,
+    y = 0;
   const maxX = enemy.board[0]?.length || 10;
   const maxY = enemy.board.length || 10;
 
