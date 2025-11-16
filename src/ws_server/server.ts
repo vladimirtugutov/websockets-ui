@@ -8,6 +8,7 @@ import { addClient, removeClient } from './utils/broadcast.js';
 import { handleCreateRoom, handleAddUserToRoom, handleSinglePlay } from './handlers/room.js';
 import { handleAddShips } from './handlers/ships.js';
 import { handleAttack, handleRandomAttack } from './handlers/game.js';
+import { unbindSocketFromUser } from './db/usersDb.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -84,6 +85,7 @@ wss.on('connection', (socket: ws.WebSocket) => {
 
   socket.on('close', () => {
     console.log('🔌 Client disconnected');
+    unbindSocketFromUser(socket);
     removeClient(socket);
   });
 });

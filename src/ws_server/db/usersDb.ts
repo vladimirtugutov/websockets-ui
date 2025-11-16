@@ -8,9 +8,23 @@ type UserData = {
 const users: Record<string, UserData> = {};
 
 const socketToUserMap = new Map<ws.WebSocket, string>();
+const activeUsers = new Set<string>();
 
 export function bindSocketToUser(socket: ws.WebSocket, name: string) {
   socketToUserMap.set(socket, name);
+  activeUsers.add(name);
+}
+
+export function unbindSocketFromUser(socket: ws.WebSocket) {
+  const name = socketToUserMap.get(socket);
+  if (name) {
+    activeUsers.delete(name);
+    socketToUserMap.delete(socket);
+  }
+}
+
+export function isUserLoggedIn(name: string): boolean {
+  return activeUsers.has(name);
 }
 
 export function getUserIndexFromSocket(socket: ws.WebSocket): string | undefined {

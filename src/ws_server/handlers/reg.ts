@@ -2,9 +2,15 @@ import * as ws from 'ws';
 import { IncomingMessage } from '../types/messages.js';
 import { send } from '../utils/send.js';
 import { broadcast } from '../utils/broadcast.js';
-import { createUser, validateUser, getUserIndex, getUserList } from '../db/usersDb.js';
+import {
+  createUser,
+  validateUser,
+  getUserIndex,
+  getUserList,
+  bindSocketToUser,
+  isUserLoggedIn,
+} from '../db/usersDb.js';
 import { getAvailableRooms } from '../db/roomsDb.js';
-import { bindSocketToUser } from '../db/usersDb.js';
 
 export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
   let data = message.data;
@@ -31,6 +37,9 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
   if (!name || !password) {
     error = true;
     errorText = 'Empty name or password';
+  } else if (isUserLoggedIn(name)) {
+    error = true;
+    errorText = 'User is already logged in';
   } else if (!validateUser(name, password)) {
     const created = createUser(name, password);
     if (!created) {
@@ -52,17 +61,19 @@ export function handleReg(socket: ws.WebSocket, message: IncomingMessage) {
 
   send(socket, regResponse);
 
-  bindSocketToUser(socket, name);
+  if (!error) {
+    bindSocketToUser(socket, name);
 
-  broadcast({
-    type: 'update_room',
-    data: getAvailableRooms(),
-    id: 0,
-  });
+    broadcast({
+      type: 'update_room',
+      data: getAvailableRooms(),
+      id: 0,
+    });
 
-  broadcast({
-    type: 'update_winners',
-    data: getUserList(),
-    id: 0,
-  });
+    broadcast({
+      type: 'update_winners',
+      data: getUserList(),
+      id: 0,
+    });
+  }
 }
