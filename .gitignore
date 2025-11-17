@@ -14,3 +14,10 @@ Thumbs.db
 
 # Logs
 npm-debug.log
+
+# Environment
+.env
+
+# ESLint and Prettier cache
+.eslintcache
+.prettierignore

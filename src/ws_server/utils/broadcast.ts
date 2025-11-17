@@ -1,0 +1,28 @@
+import * as ws from 'ws';
+import { OutgoingMessage } from '../types/messages.js';
+
+const clients = new Set<ws.WebSocket>();
+
+export function addClient(socket: ws.WebSocket) {
+  clients.add(socket);
+}
+
+export function removeClient(socket: ws.WebSocket) {
+  clients.delete(socket);
+}
+
+export function broadcast<T>(message: OutgoingMessage<T>) {
+  const doubleSerialized = {
+    ...message,
+    data: JSON.stringify(message.data),
+  };
+
+  const msg = JSON.stringify(doubleSerialized);
+  console.log('Broadcasting to clients:\n', msg);
+
+  for (const client of clients) {
+    if (client.readyState === ws.WebSocket.OPEN) {
+      client.send(msg);
+    }
+  }
+}
